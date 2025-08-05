@@ -18,7 +18,8 @@ int main(int argc, char** argv)
     const char* message = argv[2];
     const size_t message_size = strlen(message);
 
-    int sockfd, sendto_res;
+    socklen_t addr_len;
+    int sockfd, sendto_res, recv_dg_count_res, recv_buff_size_res, dg_count, buff_size;
 
     struct sockaddr_in server_addr;
     server_addr.sin_family = AF_INET;
@@ -34,6 +35,24 @@ int main(int argc, char** argv)
         close(sockfd);
         exit(1);
     }
+    
+    addr_len = sizeof(server_addr);
+    recv_dg_count_res = recvfrom(sockfd, &dg_count, sizeof(dg_count), 0,
+                                    (struct sockaddr*)&server_addr, &addr_len);
+    if (recv_dg_count_res == -1) {
+        perror("recvfrom");
+        close(sockfd);
+        exit(1);
+    }
+     
+    recv_buff_size_res = recvfrom(sockfd, &buff_size, sizeof(buff_size), 0,
+                                    (struct sockaddr*)&server_addr, &addr_len);
+    if (recv_buff_size_res == -1) {
+        perror("recvfrom");
+        close(sockfd);
+        exit(1);
+    }
+    printf("Datagrams count: %d\nDatagrams total size: %d\n", dg_count, buff_size);
     close(sockfd);
     return 0;
 }
