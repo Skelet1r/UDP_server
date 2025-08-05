@@ -7,7 +7,39 @@
 #include <arpa/inet.h> 
 #include <stddef.h>
 
+#include "utils.h"
+
 enum { buff_len = 256 };
+
+static void send_message(const int sockfd, int sending_data, int* datagrams_count, struct sockaddr_in* client_addr)
+{
+    const int size_of_sending_data = sizeof(sending_data);
+    int send_res;
+    send_res = sendto(sockfd, &sending_data, size_of_sending_data, 0,
+                            (struct sockaddr*)client_addr, sizeof(*client_addr));
+    error_check(send_res, sockfd);
+    ++*datagrams_count;
+}
+
+static void recv_message(int sockfd, int* buff_size, struct sockaddr_in* client_addr)
+{
+    char buff[buff_len];
+    int recvfrom_res;
+    socklen_t addr_len;
+
+    addr_len = sizeof(*client_addr); 
+    recvfrom_res = recvfrom(sockfd, buff, sizeof(buff), 0, 
+                (struct sockaddr*)client_addr, &addr_len);
+    error_check(recvfrom_res, sockfd);
+    *buff_size += recvfrom_res;
+}
+
+static void bind_socket(int sockfd, struct sockaddr_in* client_addr)
+{
+    int bind_res;
+    bind_res = bind(sockfd, (struct sockaddr*)client_addr, sizeof(*client_addr));
+    error_check(bind_res, sockfd);
+}
 
 int main(int argc, char** argv)
 {
@@ -20,52 +52,19 @@ int main(int argc, char** argv)
     datagrams_count = 0;
 
     while (1) {
+        struct sockaddr_in client_addr;
         socklen_t addr_len;
         int sockfd, recvfrom_res, bind_res, send_dg_count_res, send_buff_size_res;
-        char buff[buff_len];
 
-        struct sockaddr_in client_addr;
-        client_addr.sin_family = AF_INET;
-        client_addr.sin_port = htons(port);
-
-        client_addr.sin_addr.s_addr = INADDR_ANY;
-
-        addr_len = sizeof(client_addr);
+        client_addr = init_addr(port);
         sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-
-        bind_res = bind(sockfd, (struct sockaddr*)&client_addr, sizeof(client_addr));
-        if (bind_res == -1) {
-            perror("bind");
-            close(sockfd);
-            exit(1);
-        }
         
-        recvfrom_res = recvfrom(sockfd, buff, sizeof(buff), 0, 
-                    (struct sockaddr*)&client_addr, &addr_len);
-        if (recvfrom_res == -1) {
-            perror("recvfrom");
-            exit(0);
-            close(sockfd);
-        }
-        datagrams_count++;
-        buff_size += recvfrom_res;
+        bind_socket(sockfd, &client_addr);
 
-        send_dg_count_res = sendto(sockfd, &datagrams_count, sizeof(datagrams_count), 0,
-                                (struct sockaddr*)&client_addr, sizeof(client_addr));
-        if (send_dg_count_res == -1) {
-            perror("sendto");
-            close(sockfd);
-            exit(1);
-        }
+        recv_message(sockfd, &buff_size, &client_addr);
 
-        datagrams_count++;
-        send_buff_size_res = sendto(sockfd, &buff_size, sizeof(buff_size), 0,
-                                (struct sockaddr*)&client_addr, sizeof(client_addr));
-        if (send_buff_size_res == -1) {
-            perror("sendto");
-            close(sockfd);
-            exit(1);
-        }
+        send_message(sockfd, datagrams_count, &datagrams_count, &client_addr);
+        send_message(sockfd, buff_size, &datagrams_count, &client_addr);
 
         close(sockfd);
     }
