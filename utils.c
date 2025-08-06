@@ -19,6 +19,6 @@ struct sockaddr_in init_addr(int port)
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
-    addr.sin_addr.s_addr = 0;
+    addr.sin_addr.s_addr = INADDR_ANY;
     return addr;
 }

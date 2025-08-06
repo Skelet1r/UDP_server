@@ -7,21 +7,28 @@
 #include <netinet/in.h>
 #include <arpa/inet.h> 
 #include <stddef.h>
+#include <sys/time.h>
 
 #include "utils.h"
 
+enum { seconds_limit = 15, micro_seconds = 0 };
+
 int main(int argc, char** argv)
 {
-    if (argc != 3) {
+    if (argc !=3) {
         perror("Usage: ./client [PORT] [MESSAGE]\n");
         exit(1);
     }
     const int port = atoi(argv[1]);
     const char* message = argv[2];
     const size_t message_size = strlen(message);
-
+    
+    struct timeval timeout;
     socklen_t addr_len;
     int sockfd, sendto_res, recv_dg_count_res, recv_buff_size_res, dg_count, buff_size;
+
+    timeout.tv_sec = seconds_limit;
+    timeout.tv_usec = micro_seconds;
 
     struct sockaddr_in server_addr;
     server_addr = init_addr(port);
@@ -32,6 +39,7 @@ int main(int argc, char** argv)
                 (struct sockaddr*)&server_addr, sizeof(server_addr));
     error_check(sendto_res, sockfd);
     
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
     addr_len = sizeof(server_addr);
     recv_dg_count_res = recvfrom(sockfd, &dg_count, sizeof(dg_count), 0,
                                     (struct sockaddr*)&server_addr, &addr_len);
