@@ -1,15 +1,17 @@
-#include <stdio.h>
 #include <stdlib.h>
-#include <arpa/inet.h>
+#include <string.h>
+#include <syslog.h>
 #include <unistd.h>
+#include <errno.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "utils.h"
 
 void error_check(const int res, const int sockfd)
 {
     if (res == -1) {
-        perror("sendto");
+        syslog(LOG_ERR, "%s", strerror(errno));
         close(sockfd);
         exit(1);
     }
