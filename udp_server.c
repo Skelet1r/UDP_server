@@ -85,12 +85,13 @@ static void bind_socket(int sockfd, struct sockaddr_in* client_addr)
 
 int main(int argc, char** argv)
 {
-    if (argc != 2) {
-        perror("Usage: ./client [PORT]\n");
+    if (argc != 3) {
+        perror("Usage: ./client [PORT] [IP]\n");
         exit(1);
     }
     demonize();
     const int port = atoi(argv[1]);
+    const char* ip = argv[2];
     int datagrams_count, buff_size;
     datagrams_count = 0;
 
@@ -98,7 +99,7 @@ int main(int argc, char** argv)
         struct sockaddr_in client_addr;
         int sockfd;
 
-        client_addr = init_addr(port);
+        client_addr = init_addr(port, ip);
         sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 
         bind_socket(sockfd, &client_addr);
